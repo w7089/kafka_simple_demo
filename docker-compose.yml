@@ -1,0 +1,93 @@
+version: "3.8"
+
+services:
+  zookeeper:
+    image: bitnami/zookeeper 
+    container_name: zookeeper  
+    volumes:
+      - zookeeper_data:/bitnami/zookeeper
+    environment: 
+      - ALLOW_ANONYMOUS_LOGIN=yes  # not recommended for production
+    expose: 
+      - 2181    
+    networks: 
+      - kafka-network   
+    healthcheck:
+        test: "nc -z localhost 2181"
+        interval: 30s
+        timeout: 5s
+        retries: 5
+        start_period: 10s
+
+  kafka:
+    image: bitnami/kafka
+    container_name: kafka  
+    volumes: 
+      - kafka-data:/bitnami/kafka
+    networks: 
+      - kafka-network
+    environment:
+      - KAFKA_BROKER_ID=1
+      - ALLOW_PLAINTEXT_LISTENER=yes # not recommended for production
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+    depends_on:
+      zookeeper:  
+        condition: service_healthy 
+    healthcheck:
+      test: "kafka-topics.sh --bootstrap-server localhost:9092 --list"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s      
+
+    expose: 
+      - 9092
+
+  kafka-producer:
+    container_name: kafka-producer 
+    image: confluentinc/cp-kafkacat
+    volumes: 
+      - ./my_msgs.txt:/data/my_msgs.txt
+    networks: 
+      - kafka-network
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: "kafkacat -b kafka:9092 -t test -P -l /data/my_msgs.txt"
+        
+  kafka-consumer:
+    container_name: kafka-consumer   
+    restart: always
+    image: confluentinc/cp-kafkacat
+    depends_on: 
+      kafka:
+        condition: service_healthy    
+    networks: 
+      - kafka-network      
+    command: "kafkacat -b kafka:9092 -C -f '\nKey (%K bytes): %k\t\nValue (%S bytes): %s\n\Partition: %p\tOffset: %o\n--\n' -t test"
+
+  kafka-manager:
+    image: kafkamanager/kafka-manager
+    container_name: kafka-manager
+    ports: 
+      - "9000:9000"
+    environment: 
+      - ZK_HOSTS=zookeeper  
+    networks: 
+      - kafka-network
+    depends_on: 
+      kafka:
+        condition: service_healthy 
+      zookeeper:  
+        condition: service_healthy
+
+networks: 
+  kafka-network:
+
+volumes:
+  kafka-data:  
+  zookeeper_data:
+
+
+
+
