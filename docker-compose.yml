@@ -65,22 +65,7 @@ services:
     networks: 
       - kafka-network      
     command: "kafkacat -b kafka:9092 -C -f '\nKey (%K bytes): %k\t\nValue (%S bytes): %s\n\Partition: %p\tOffset: %o\n--\n' -t test"
-
-  kafka-manager:
-    image: kafkamanager/kafka-manager
-    container_name: kafka-manager
-    ports: 
-      - "9000:9000"
-    environment: 
-      - ZK_HOSTS=zookeeper  
-    networks: 
-      - kafka-network
-    depends_on: 
-      kafka:
-        condition: service_healthy 
-      zookeeper:  
-        condition: service_healthy
-
+    
 networks: 
   kafka-network:
 
