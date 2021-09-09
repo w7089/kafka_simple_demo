@@ -21,3 +21,4 @@ Kafka producer creates topic `test` and writes 3 messages specified in `my_msgs.
 
 Kafka consumer is always up and consumes messages from topic `test`
 
+More information about this demo is [here](https://rokpoto.com/introduction-into-kafka-in-production-part-1/)
